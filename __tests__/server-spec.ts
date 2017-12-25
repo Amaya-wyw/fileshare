@@ -139,14 +139,66 @@ test('测试管理员 logout', done => {
     });
 });
 /* 管理员 api */
+test('测试数据库链接', done => {
+  var con = mysql.createConnection({
+    host: process.env.MYSQL_HOST,
+    user: process.env.MYSQL_USERNAME,
+    password: process.env.MYSQL_PASSWORD,
+    database: 'cloud',
+  });
+  // 创建admin数据
+  con.query(
+    "INSERT INTO admin(username, password) VALUES ('123','123')",
+    function(err) {
+      expect(err).toBeFalsy();
+      console.log('insert success');
+      con.end();
+      done();
+    }
+  );
+});
 test('测试管理员 login', done => {
   request(app)
     .post('/api/admins')
     .type('form')
-    .send({ action: 'login' })
+    .send({
+      action: 'login',
+      username: 123,
+      password: 123,
+    })
     .expect(200, function(err, res) {
       expect(err).toBeFalsy();
       expect(res.body === 'ok').toBeTruthy();
+      done();
+    });
+});
+test('测试管理员 login', done => {
+  request(app)
+    .post('/api/admins')
+    .type('form')
+    .send({
+      action: 'login',
+      username: 111,
+      password: 123,
+    })
+    .expect(200, function(err, res) {
+      expect(err).toBeFalsy();
+      expect(res.body === 'username none').toBeTruthy();
+      done();
+    });
+});
+test('测试管理员 login', done => {
+  request(app)
+    .post('/api/admins')
+    .type('form')
+    .send({
+      action: 'login',
+      username: 123,
+      password: 111,
+    })
+    .expect(200, function(err, res) {
+      expect(err).toBeFalsy();
+      expect(res.body === 'password none').toBeTruthy();
       done();
     });
 });
@@ -688,7 +740,17 @@ test('insert file', done => {
     }
   );
 });
-
+test('测试获取所有', done => {
+  request(app)
+    .get('/api/files?type=all')
+    .expect(200, function(err, res) {
+      expect(err).toBeFalsy();
+      console.log(err);
+      console.log(res.body);
+      expect(res.body).toBeTruthy();
+      done();
+    });
+});
 test('测试获取分类文件', done => {
   request(app)
     .get('/api/files?type=image')
@@ -719,90 +781,6 @@ test('测试download----fail', done => {
     });
 });
 
-test('测试user-热门', done => {
-  var con = mysql.createConnection({
-    host: process.env.MYSQL_HOST,
-    user: process.env.MYSQL_USERNAME,
-    password: process.env.MYSQL_PASSWORD,
-    database: 'cloud',
-  });
-  var data = [
-    ['user1', '123', 'user1.qq', '2017-10-20'],
-    ['user2', '123', 'user1.qq', '2017-10-20'],
-    ['user3', '123', 'user1.qq', '2017-10-20'],
-    ['user4', '123', 'user1.qq', '2017-10-20'],
-    ['user5', '123', 'user1.qq', '2017-10-20'],
-    ['user6', '123', 'user1.qq', '2017-10-20'],
-    ['user7', '123', 'user1.qq', '2017-10-20'],
-    ['user8', '123', 'user1.qq', '2017-10-20'],
-  ];
-  con.query(
-    'INSERT INTO user(username, password, email, created_at) VALUES ?',
-    [data],
-    function(err) {
-      expect(err).toBeFalsy();
-      console.log('insert success');
-      con.end();
-      done();
-    }
-  );
-});
-test('测试file-热门', done => {
-  var con = mysql.createConnection({
-    host: process.env.MYSQL_HOST,
-    user: process.env.MYSQL_USERNAME,
-    password: process.env.MYSQL_PASSWORD,
-    database: 'cloud',
-  });
-  var data = [
-    ['t1', 'video', 3, 100, '111'],
-    ['t2', 'video', 3, 100, '120'],
-    ['t3', 'zip', 3, 90, '111'],
-    ['t4', 'zip', 3, 110, '120'],
-    ['t5', 'image', 3, 20, '111'],
-    ['t6', 'image', 3, 50, '120'],
-    ['t7', 'doc', 3, 70, '111'],
-    ['t8', 'doc', 3, 122, '120'],
-  ];
-  con.query(
-    'insert into `file` ( `filename`, `type`, `size`, `downloads`, `hash`) values ?',
-    [data],
-    function(err) {
-      expect(err).toBeFalsy();
-      console.log('insert success');
-      con.end();
-      done();
-    }
-  );
-});
-test('测试user_file-热门', done => {
-  var con = mysql.createConnection({
-    host: process.env.MYSQL_HOST,
-    user: process.env.MYSQL_USERNAME,
-    password: process.env.MYSQL_PASSWORD,
-    database: 'cloud',
-  });
-  var data = [
-    [1, 1, '2017-12-07 00:00:00'],
-    [2, 2, '2017-12-07 00:00:00'],
-    [3, 3, '2017-12-07 00:00:00'],
-    [4, 4, '2017-12-07 00:00:00'],
-    [5, 5, '2017-12-07 00:00:00'],
-    [6, 6, '2017-12-07 00:00:00'],
-    [7, 7, '2017-12-07 00:00:00'],
-    [8, 8, '2017-12-07 00:00:00'],
-  ];
-  con.query(
-    'INSERT INTO `user_file` (`user`, `file`, `uploaded_at`) values ?',
-    [data],
-    function(err) {
-      expect(err).toBeFalsy();
-      console.log('insert success');
-      con.end();
-      done();
-    }
-  );
-});
 test('/hot/video读取测试', done => {
   request(app)
     .get('/api/files/hots?type=video')
@@ -842,6 +820,15 @@ test('/hot/doc读取测试', done => {
     });
 });
 
+test('测试获取用户名', done => {
+  request(app)
+    .get('/api/users/')
+    .expect(200, function(err, res) {
+      expect(err).toBeFalsy();
+      expect(res.text !== '').toBeTruthy();
+      done();
+    });
+});
 test('测试文件分类--allFiles', done => {
   request(app)
     .get('/api/users/allFiles')
@@ -937,7 +924,7 @@ beforeAll(function(done) {
           expect(err).toBeFalsy();
           console.log('success user');
           con.query(
-            'create table pending_file (id int auto_increment,filename varchar(255) not null,type varchar(20) not null,size int not null,hash varchar(64) not null,primary key(id));',
+            'create table pending_file (id int auto_increment,user int not null,filename varchar(255) not null,type varchar(20) not null,size int not null,hash varchar(64) not null,primary key(id));',
             function(err) {
               expect(err).toBeFalsy();
               console.log('success pending_file');
@@ -952,7 +939,7 @@ beforeAll(function(done) {
                       expect(err).toBeFalsy();
                       console.log('success file');
                       con.query(
-                        'create table admin (id int primary key auto_increment,username varchar(20)not null,password varchar(64)not null,created_at datetime not null);',
+                        'create table admin (id int primary key auto_increment,username varchar(20)not null,password varchar(64)not null);',
                         function(err) {
                           expect(err).toBeFalsy();
                           console.log('success admin');
